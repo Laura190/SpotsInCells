@@ -18,7 +18,7 @@ Instructions for installing the OMERO Plugins are available here: [https://omero
 Instructions for installing the MorphoLibJ plugins are available here: [https://imagej.net/plugins/morpholibj](https://imagej.net/plugins/morpholibj)
 
 ## Output
-Saves ROIs for nuclei and spots to OMERO images and saves NumberSpotsInCells.csv to each image. The .csv files contains two columns: 1) the cell ID which relates to the ROI and 2) the number of spots in that cell.
+Saves ROIs for nuclei and spots to OMERO images and saves NumberSpotsInCells.csv to each image. A single .csv file is saved to the dataset. The results file contains three columns: 1) the image ID; 2)the cell ID which relates to the ROI and 3) the number of spots in that cell.
 
 ## References
 
