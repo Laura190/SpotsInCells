@@ -9,7 +9,7 @@ run("OMERO Extensions");
 
 //Connect to server and apply macro to each image in dataset
 connected = Ext.connectToOMERO(host,port,user,pass);
-table_name="NumberSpotsInCells.csv"
+table_name="NumberSpotsInCells.csv";
 if (connected=="true"){
 imageList = Ext.list("images", "dataset", dataset_id);
 image=split(imageList, ",");
@@ -22,6 +22,13 @@ for (i = 0; i < image.length; i++) {
 	processImage(title,image[i],table_name);
 	roiManager("reset");
 }
+selectWindow("Spots Per Cell");
+// Save results to OMERO
+csv_file = getDir("temp") + table_name + "_" + image;
+selectWindow("Spots Per Cell");
+saveAs("Results", csv_file);
+file_id = Ext.addFile("Dataset",dataset_id, csv_file);
+deleted=File.delete(csv_file);
 Ext.disconnect();
 print("Finished");
 }
@@ -51,7 +58,7 @@ selectImage(original);
 Stack.setPosition(1, 1, 1);
 roiManager("Deselect");
 roiManager("Combine");
-run("Find Maxima...", "prominence=500 output=[Point Selection]");
+run("Find Maxima...", "prominence=600 output=[Point Selection]");
 roiManager("add");
 // Delete rois except points
 roiManager("Deselect");
@@ -59,7 +66,7 @@ regions=roiManager("count");
 roiManager("Select", Array.getSequence(regions-1));
 roiManager("Delete");
 run("Select None");
-// Count number of spots per cell
+// Count number of spots Per cell
 selectImage(cellsImage);
 run("Set Measurements...", "modal redirect=None decimal=3");
 roiManager("Measure");
@@ -68,26 +75,37 @@ Array.getStatistics(modes, min, max, mean, stdDev);
 run("Distribution...", "parameter=Mode or="+max+1+" and=0-"+max+1);
 selectWindow("Mode Distribution");
 Plot.getValues(values,counts)
+// Format Results
 Array.sort(counts,values);
-number_of_spots=Array.deleteValue(counts, 0);
-num_cells=lengthOf(number_of_spots);
+curr_number_of_spots=Array.deleteValue(counts, 0);
+num_cells=lengthOf(curr_number_of_spots);
 Array.reverse(values);
-cell_ID=Array.trim(values, num_cells);
-Array.reverse(cell_ID);
-Array.show("Spots Per Cell", cell_ID, number_of_spots);
-// Save results to OMERO
-csv_file = getDir("temp") + table_name + "_" + image;
-selectWindow("Spots Per Cell");
-saveAs("Results", csv_file);
-file_id = Ext.addFile("Image",image, csv_file);
-deleted=File.delete(csv_file);
+curr_cell_id=Array.trim(values, num_cells);
+curr_cell_id=Array.reverse(curr_cell_id);
+curr_image_id = newArray(num_cells);
+Array.fill(curr_image_id, image);
+if (isOpen("Spots Per Cell")){
+	selectWindow("Spots Per Cell");
+	prev_image_id=Table.getColumn("image_ID");
+	image_ID=Array.concat(prev_image_id,curr_image_id);
+	prev_cell_id=Table.getColumn("cell_ID");
+	cell_ID=Array.concat(prev_cell_id,curr_cell_id);
+	prev_spots=Table.getColumn("number_of_spots");
+	number_of_spots=Array.concat(prev_spots,curr_number_of_spots);
+	run("Close");
+} else {
+	image_ID=curr_image_id;
+	cell_ID=curr_cell_id;
+	number_of_spots=curr_number_of_spots;
+}
+Array.show("Spots Per Cell", image_ID, cell_ID, number_of_spots);
 // Close windows
 selectWindow("Mode Distribution");
 run("Close");
 selectWindow("Results");
 run("Close");
-selectWindow(table_name + "_" + image);
-run("Close");
+//selectWindow(table_name + "_" + image);
+//run("Close");
 // Create ROIs for individual cells
 selectImage(cellsImage);
 run("Label Morphological Filters", "operation=Erosion radius=1 from_any_label");
