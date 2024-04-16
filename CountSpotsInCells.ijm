@@ -60,11 +60,18 @@ run("Analyze Particles...", "add");
 if (roiManager("count") > 0){
 selectImage(original);
 // Identify spots in channel 1
+original=getTitle();
 Stack.setPosition(1, 1, 1);
+run("Duplicate...", "title=copy duplicate channels=1");
+run("Median...", "radius=1");
 roiManager("Deselect");
 roiManager("Combine");
-run("Find Maxima...", "prominence=600 output=[Point Selection]");
+run("Find Maxima...", "prominence=140 output=[Point Selection]");
+selectImage(original);
+run("Restore Selection");
 roiManager("add");
+selectWindow("copy");
+close();
 // Delete rois except points
 roiManager("Deselect");
 regions=roiManager("count");
@@ -119,7 +126,7 @@ run("Analyze Particles...", "add");
 selectImage(original);
 Stack.setPosition(2, 1, 1);
 // select channel 2
-for (i = 1; i <= num_cells; i++) {
+for (i = 1; i <= roiManager("count"); i++) {
 roiManager("Select", 1);
 run("Enlarge...", "enlarge=1 pixel");
 roiManager("Add");
