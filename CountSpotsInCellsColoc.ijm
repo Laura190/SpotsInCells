@@ -45,7 +45,7 @@ run("Select None");
 original = title;
 selectImage(original);
 //Find colocalised spots
-find_puncta(original);
+puncta_found=find_puncta(original);
 // Save results to OMERO
 csv_file = getDir("temp") + "PunctaResults.csv";
 selectWindow("PunctaResults");
@@ -58,12 +58,12 @@ selectWindow("Results");
 run("Close");
 // Segment all cells from channel 3
 Stack.setPosition(3, 1, 1);
-//run("Median...", "radius=5 slice");
+run("Median...", "radius=5 slice");
 run("Directional Filtering", "type=Max operation=Erosion line=20 direction=32");
 run("Morphological Segmentation");
 // wait for window to load");
 wait(1000);
-call("inra.ijpb.plugins.MorphologicalSegmentation.segment", "tolerance=500.0", "calculateDams=true", "connectivity=4");
+call("inra.ijpb.plugins.MorphologicalSegmentation.segment", "tolerance=300.0", "calculateDams=true", "connectivity=4");
 call("inra.ijpb.plugins.MorphologicalSegmentation.setDisplayFormat", "Catchment basins");
 wait(1000);
 call("inra.ijpb.plugins.MorphologicalSegmentation.createResultImage");
@@ -110,43 +110,45 @@ run("Analyze Particles...", "add");
 selectImage(original);
 Stack.setPosition(3, 1, 1);
 // select channel 3
-for (i = number_puncta; i <= roiManager("count"); i++) {
-roiManager("Select", number_puncta);
-run("Enlarge...", "enlarge=1 pixel");
-roiManager("Add");
-roiManager("Select", number_puncta);
-roiManager("Delete");
-}
-// Rename cells with corresponding ID
-selectImage(cellsImage);
-num_cells=roiManager("count")-number_puncta;
-roi_names=newArray(num_cells);
-roi_names[0]=0;
-for (i = 1; i <= num_cells; i++) {
-roiManager("Select", i+number_puncta-1);
-run("Measure");
-mode=Table.get("Mode", 0);
-roiManager("Rename",mode);
-roi_names[i]=mode;
-selectWindow("Results");
-run("Close");
-}
-Array.sort(roi_names);
-for (i = 0; i < lengthOf(roi_names); i++) {
-	if ( !contains(curr_cell_id, roi_names[i]) ) {
-		curr_cell_id=Array.concat(curr_cell_id,roi_names[i]);
-		curr_image_id=Array.concat(curr_image_id,image);
-		curr_number_of_spots=Array.concat(curr_number_of_spots,0);
+if (number_puncta < roiManager("count")) {
+	for (i = number_puncta; i <= roiManager("count"); i++) {
+		roiManager("Select", number_puncta);
+		run("Enlarge...", "enlarge=1 pixel");
+		roiManager("Add");
+		roiManager("Select", number_puncta);
+		roiManager("Delete");
 	}
 }
-Array.sort(curr_cell_id,curr_image_id,curr_number_of_spots);
-Array.show("For current image",curr_image_id,curr_cell_id,curr_number_of_spots);
-Table.deleteRows(0, 0, "For current image");
-curr_image_id=Table.getColumn("curr_image_id");
-curr_cell_id=Table.getColumn("curr_cell_id");
-curr_number_of_spots=Table.getColumn("curr_number_of_spots");
-selectWindow("For current image");
-run("Close");
+	// Rename cells with corresponding ID
+	selectImage(cellsImage);
+	num_cells=roiManager("count")-number_puncta;
+	roi_names=newArray(num_cells);
+	roi_names[0]=0;
+	for (i = 1; i <= num_cells; i++) {
+		roiManager("Select", i+number_puncta-1);
+		run("Measure");
+		mode=Table.get("Mode", 0);
+		roiManager("Rename",mode);
+		roi_names[i]=mode;
+		selectWindow("Results");
+		run("Close");
+	}
+	Array.sort(roi_names);
+	for (i = 0; i < lengthOf(roi_names); i++) {
+		if ( !contains(curr_cell_id, roi_names[i]) ) {
+			curr_cell_id=Array.concat(curr_cell_id,roi_names[i]);
+			curr_image_id=Array.concat(curr_image_id,image);
+			curr_number_of_spots=Array.concat(curr_number_of_spots,0);
+		}
+	}
+	Array.sort(curr_cell_id,curr_image_id,curr_number_of_spots);
+	Array.show("For current image",curr_image_id,curr_cell_id,curr_number_of_spots);
+	Table.deleteRows(0, 0, "For current image");
+	curr_image_id=Table.getColumn("curr_image_id");
+	curr_cell_id=Table.getColumn("curr_cell_id");
+	curr_number_of_spots=Table.getColumn("curr_number_of_spots");
+	selectWindow("For current image");
+	run("Close");
 //Format all results
 if ( !matches(temp_csv, "0")){
 //if (isOpen("Spots Per Cell.csv")){;
@@ -247,6 +249,11 @@ for(j=0;j<lengthOf(headers);j++){
 		result_string[i]=getResultString(headers[j], row_array[i]-1);
 	}
 	Table.setColumn(headers[j], result_string);
+}
+if (roiManager("count")>0){
+	return true
+} else {
+	return false
 }
 }
 
